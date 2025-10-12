@@ -20,5 +20,5 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "api", "api/create_pix.js"]
+  "include": ["src", "api", "api/gerar-pix.js"]
 }

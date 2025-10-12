@@ -53,7 +53,7 @@ app.post("/api/gerar-pix", async (req, res) => {
 const distPath = path.join(__dirname, "dist");
 app.use(express.static(distPath));
 
-// Qualquer rota que não seja API retorna index.html (React SPA)
+// SPA React: qualquer rota que não seja API retorna index.html
 app.get("*", (req, res) => {
   res.sendFile(path.join(distPath, "index.html"));
 });
