@@ -3,9 +3,12 @@ import { AuthForm } from './components/AuthForm';
 import { AdminDashboard } from './components/AdminDashboard';
 import { PublicEvents } from './components/PublicEvents';
 import { LogOut } from 'lucide-react';
+import { useState } from 'react';
 
 function AppContent() {
   const { user, profile, loading, signOut } = useAuth();
+  const [pixData, setPixData] = useState<any>(null);
+  const [loadingPix, setLoadingPix] = useState(false);
 
   // Tela de carregamento
   if (loading) {
@@ -23,6 +26,30 @@ function AppContent() {
   if (!user || !profile) {
     return <AuthForm />;
   }
+
+  // Função para gerar PIX
+  const gerarPix = async () => {
+    setLoadingPix(true);
+    try {
+      const res = await fetch('/api/gerar-pix', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          valor: 100,
+          descricao: 'Ingresso Madness',
+          email: user.email || 'teste@exemplo.com'
+        })
+      });
+      if (!res.ok) throw new Error('Erro ao gerar PIX');
+      const data = await res.json();
+      setPixData(data); // Salva os dados do PIX no estado
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao gerar PIX. Confira o console.');
+    } finally {
+      setLoadingPix(false);
+    }
+  };
 
   // Usuário logado → renderiza painel
   return (
@@ -42,8 +69,33 @@ function AppContent() {
         </div>
       </header>
 
-      <main>
-        {profile.is_admin ? <AdminDashboard /> : <PublicEvents />}
+      <main className="p-4">
+        {profile.is_admin ? (
+          <AdminDashboard />
+        ) : (
+          <>
+            <PublicEvents />
+            {/* Botão para gerar PIX */}
+            <div className="mt-6">
+              <button
+                onClick={gerarPix}
+                disabled={loadingPix}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                {loadingPix ? 'Gerando PIX...' : 'Gerar PIX'}
+              </button>
+
+              {/* Mostra QR Code se gerado */}
+              {pixData && (
+                <div className="mt-4">
+                  <p className="font-semibold mb-2">PIX Gerado:</p>
+                  <img src={`data:image/png;base64,${pixData.qr_code_base64}`} alt="PIX QR Code" />
+                  <p className="mt-2 text-sm text-gray-600">ID do pagamento: {pixData.payment_id}</p>
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </main>
     </div>
   );

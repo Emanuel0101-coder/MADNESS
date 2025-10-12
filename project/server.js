@@ -22,7 +22,7 @@ const client = new MercadoPagoConfig({
 });
 const paymentInstance = new Payment(client);
 
-// --- ROTAS BACKEND ---
+// --- ROTA PIX ---
 app.post("/api/gerar-pix", async (req, res) => {
   try {
     const { valor, descricao, email } = req.body;
@@ -50,10 +50,12 @@ app.post("/api/gerar-pix", async (req, res) => {
 });
 
 // --- SERVE FRONTEND BUILDADO ---
-app.use(express.static(path.join(__dirname, "dist")));
+const distPath = path.join(__dirname, "dist");
+app.use(express.static(distPath));
 
+// Qualquer rota que não seja API retorna index.html (React SPA)
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "dist", "index.html"));
+  res.sendFile(path.join(distPath, "index.html"));
 });
 
 // --- START SERVER ---
