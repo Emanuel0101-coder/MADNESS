@@ -16,7 +16,7 @@ const client = new MercadoPagoConfig({
   accessToken: process.env.MERCADO_PAGO_TOKEN,
 });
 
-// 📍 Define a rota da API antes do static/fallback
+// 🟢 ROTA PIX - precisa estar ANTES do static
 app.post("/api/gerar-pix", async (req, res) => {
   try {
     const { valor, descricao, email } = req.body;
@@ -34,29 +34,45 @@ app.post("/api/gerar-pix", async (req, res) => {
     };
 
     const response = await payment.create({ body });
+    const txData = response.point_of_interaction?.transaction_data;
+
+    if (!txData) {
+      console.error("❌ PIX não retornou dados válidos:", response);
+      return res.status(500).json({ error: "Falha ao gerar PIX" });
+    }
+
     res.json({
       status: response.status,
-      qr_code: response.point_of_interaction.transaction_data.qr_code,
-      qr_base64:
-        response.point_of_interaction.transaction_data.qr_code_base64,
+      qr_code: txData.qr_code,
+      qr_base64: txData.qr_code_base64,
+      payment_id: response.id,
     });
   } catch (error) {
-    console.error("Erro ao gerar PIX:", error);
+    console.error("❌ Erro ao gerar PIX:", error);
     res.status(500).json({ error: "Falha ao gerar PIX" });
   }
 });
 
-// 🧭 Configura caminho estático (frontend build)
+// 🟣 SERVE FRONTEND DO VITE (mesmo serviço)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const distPath = path.resolve(__dirname, "dist");
+
 app.use(express.static(distPath));
 
-// ⚙️ Fallback SPA (mantido após a rota)
+// LOG de rota (debug)
+app.use((req, res, next) => {
+  console.log("➡️  Rota chamada:", req.method, req.url);
+  next();
+});
+
+// Fallback SPA
 app.get("*", (req, res) => {
   res.sendFile(path.join(distPath, "index.html"));
 });
 
 // 🚀 Inicializa servidor
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`✅ Servidor rodando na porta ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`✅ Servidor rodando na porta ${PORT}`);
+});
